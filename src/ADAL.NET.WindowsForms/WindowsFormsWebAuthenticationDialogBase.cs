@@ -157,7 +157,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal
 
             if (!e.Cancel)
             {
-                Logger.Verbose(null, string.Format(CultureInfo.InvariantCulture, "Navigating to '{0}'.", EncodingHelper.UrlDecode(e.Url.ToString())));
+                Logger.Verbose(null, string.Format(CultureInfo.InvariantCulture, "Navigating to '{0}'.", e.Url.Host));
             }
         }
 
@@ -165,7 +165,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal
         {
             if (!this.CheckForClosingUrl(e.Url))
             {
-                Logger.Verbose(null, string.Format(CultureInfo.InvariantCulture, "Navigated to '{0}'.", EncodingHelper.UrlDecode(e.Url.ToString())));
+                Logger.Verbose(null, string.Format(CultureInfo.InvariantCulture, "Navigated to '{0}'.", e.Url.Host));
             }
         }
 

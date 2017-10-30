@@ -291,9 +291,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                     refreshTokenHash = "[No Refresh Token]";
                 }
 
-                Logger.Information(this.CallState, "=== Token Acquisition finished successfully. An access token was retuned:\n\tAccess Token Hash: {0}\n\tRefresh Token Hash: {1}\n\tExpiration Time: {2}\n\tUser Hash: {3}\n\t",
-                    accessTokenHash, refreshTokenHash, result.ExpiresOn,
-                    result.UserInfo != null ? PlatformSpecificHelper.CreateSha256Hash(result.UserInfo.UniqueId) : "null");
+                Logger.Information(this.CallState, "=== Token Acquisition finished successfully. An access token was returned with an Expiration Time: {0}",
+                    result.ExpiresOn);
             }
         }
 

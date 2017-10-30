@@ -50,7 +50,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
             userRealmEndpoint += (userName + "?api-version=1.0");
 
             userRealmEndpoint = HttpHelper.CheckForExtraQueryParameter(userRealmEndpoint);
-            Logger.Information(callState, "Sending user realm discovery request to '{0}'", userRealmEndpoint);
 
             UserRealmDiscoveryResponse userRealmResponse;
             ClientMetrics clientMetrics = new ClientMetrics();
@@ -83,6 +82,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 clientMetrics.EndClientMetricsRecord(ClientMetricsEndpointType.UserRealmDiscovery, callState);
             }
 
+            Logger.Information(callState, "User realm discovery completed");
             return userRealmResponse;
         }
     }

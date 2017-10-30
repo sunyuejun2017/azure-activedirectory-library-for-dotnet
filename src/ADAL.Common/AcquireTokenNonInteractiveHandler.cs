@@ -65,6 +65,8 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                 // It cannot be moved to constructor or property or a pure sync or async call. This is why we moved it here which is an async call already.
                 if (string.IsNullOrWhiteSpace(this.userCredential.UserName))
                 {
+
+                    Logger.Information(this.CallState, "UPN not provided. Attempting to detect logged in user.");
 #if ADAL_NET
                     this.userCredential.UserName = PlatformSpecificHelper.GetUserPrincipalName();
 #else
@@ -75,8 +77,6 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
                         Logger.Information(this.CallState, "Could not find UPN for logged in user");
                         throw new AdalException(AdalError.UnknownUser);
                     }
-
-                    Logger.Verbose(this.CallState, "Logged in user with hash '{0}' detected", PlatformSpecificHelper.CreateSha256Hash(userCredential.UserName));
                 }
 
                 this.DisplayableId = userCredential.UserName;
@@ -95,7 +95,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
             if (this.userAssertion == null && this.Authenticator.AuthorityType != AuthorityType.ADFS)
             { 
                 UserRealmDiscoveryResponse userRealmResponse = await UserRealmDiscoveryResponse.CreateByDiscoveryAsync(this.Authenticator.UserRealmUri, this.userCredential.UserName, this.CallState);
-                Logger.Information(this.CallState, "User with hash '{0}' detected as '{1}'", PlatformSpecificHelper.CreateSha256Hash(this.userCredential.UserName), userRealmResponse.AccountType);
+                Logger.Information(this.CallState, "User detected as '{0}'", userRealmResponse.AccountType);
 
                 if (string.Compare(userRealmResponse.AccountType, "federated", StringComparison.OrdinalIgnoreCase) == 0)
                 {
