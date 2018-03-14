@@ -45,8 +45,9 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal.Instance
         private bool updatedFromTemplate;
 
         private static readonly Regex TenantNameRegex = new Regex(Regex.Escape(TenantlessTenantName), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+	    private static readonly string RequiredUrlScheme = "https";
 
-        private void Init(string authority, bool validateAuthority)
+	    private void Init(string authority, bool validateAuthority)
         {
             this.Authority = EnsureUrlEndsWithForwardSlash(authority);
 
@@ -150,7 +151,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal.Instance
             }
 
             var authorityUri = new Uri(authority);
-            if (authorityUri.Scheme != "https")
+            if (authorityUri.Scheme != Authenticator.RequiredUrlScheme)
             {
                 throw new ArgumentException(AdalErrorMessage.AuthorityUriInsecure, "authority");
             }

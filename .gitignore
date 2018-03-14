@@ -14,3 +14,4 @@ AppPackages
 Microsoft.IdentityModel.Clients.ActiveDirectory.XML
 *.htm
 .nugetPackageRoot/
+/build
