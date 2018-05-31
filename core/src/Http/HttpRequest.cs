@@ -47,9 +47,20 @@ namespace Microsoft.Identity.Core.Http
         public static async Task<HttpResponse> SendPost(Uri endpoint, Dictionary<string, string> headers,
             Dictionary<string, string> bodyParameters, RequestContext requestContext)
         {
+            HttpContent body = null;
+            if (bodyParameters != null)
+            {
+                body = new FormUrlEncodedContent(bodyParameters);
+            }
+            return await SendPost(endpoint, headers, body, requestContext).ConfigureAwait(false);
+        }
+
+        public static async Task<HttpResponse> SendPost(Uri endpoint, Dictionary<string, string> headers,
+            HttpContent body, RequestContext requestContext)
+        {
             return
                 await
-                    ExecuteWithRetry(endpoint, headers, bodyParameters, HttpMethod.Post, requestContext)
+                    ExecuteWithRetry(endpoint, headers, body, HttpMethod.Post, requestContext)
                         .ConfigureAwait(false);
         }
 
@@ -74,8 +85,24 @@ namespace Microsoft.Identity.Core.Http
             return requestMessage;
         }
 
+        private static async Task<HttpContent> DeepCopy(HttpContent content)
+        {
+            var temp = new System.IO.MemoryStream();
+            await content.CopyToAsync(temp).ConfigureAwait(false);
+            temp.Position = 0;
+            var clone = new StreamContent(temp);
+            if (content.Headers != null)
+            {
+                foreach (var h in content.Headers)
+                {
+                    clone.Headers.Add(h.Key, h.Value);
+                }
+            }
+            return clone;
+        }
+
         private static async Task<HttpResponse> ExecuteWithRetry(Uri endpoint, Dictionary<string, string> headers,
-            Dictionary<string, string> bodyParameters, HttpMethod method,
+            HttpContent body, HttpMethod method,
             RequestContext requestContext, bool retry = true)
         {
             Exception toThrow = null;
@@ -83,7 +110,14 @@ namespace Microsoft.Identity.Core.Http
             HttpResponse response = null;
             try
             {
-                response = await Execute(endpoint, headers, bodyParameters, method).ConfigureAwait(false);
+                HttpContent clonedBody = null;
+                if(body != null)
+                {
+                    // Since HttpContent would be disposed by underlying client.SendAsync(),
+                    // we duplicate it so that we will have a copy in case we would need to retry
+                    clonedBody = await DeepCopy(body).ConfigureAwait(false);
+                }
+                response = await Execute(endpoint, headers, clonedBody, method).ConfigureAwait(false);
 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
@@ -91,7 +125,7 @@ namespace Microsoft.Identity.Core.Http
                 }
 
                 var msg = string.Format(CultureInfo.InvariantCulture,
-                    "Response status code does not indicate success: {0} ({1}).",
+                    MsalErrorMessage.HttpRequestUnsuccessful,
                     (int) response.StatusCode, response.StatusCode);
                 requestContext.Logger.Info(msg);
                 requestContext.Logger.InfoPii(msg);
@@ -117,7 +151,7 @@ namespace Microsoft.Identity.Core.Http
                     requestContext.Logger.Info(msg);
                     requestContext.Logger.InfoPii(msg);
                     await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
-                    return await ExecuteWithRetry(endpoint, headers, bodyParameters, method, requestContext, false).ConfigureAwait(false);
+                    return await ExecuteWithRetry(endpoint, headers, body, method, requestContext, false).ConfigureAwait(false);
                 }
 
                 const string message = "Request retry failed.";
@@ -136,7 +170,7 @@ namespace Microsoft.Identity.Core.Http
         }
 
         private static async Task<HttpResponse> Execute(Uri endpoint, Dictionary<string, string> headers,
-            Dictionary<string, string> bodyParameters, HttpMethod method)
+            HttpContent body, HttpMethod method)
         {
             HttpClient client = HttpClientFactory.GetHttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
@@ -145,11 +179,7 @@ namespace Microsoft.Identity.Core.Http
             using (HttpRequestMessage requestMessage = CreateRequestMessage(endpoint, headers))
             {
                 requestMessage.Method = method;
-                if (bodyParameters != null)
-                {
-                    requestMessage.Content = new FormUrlEncodedContent(bodyParameters);
-                }
-
+                requestMessage.Content = body;
                 using (HttpResponseMessage responseMessage =
                     await client.SendAsync(requestMessage).ConfigureAwait(false))
                 {
