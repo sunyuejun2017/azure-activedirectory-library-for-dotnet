@@ -32,7 +32,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Identity.Core;
 
-namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal.WsTrust
+namespace Microsoft.Identity.Core.WsTrust
 {
     internal class WsTrustResponse
     {
@@ -42,34 +42,24 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal.WsTrust
 
         public string TokenType { get; private set; }
 
-        public static WsTrustResponse CreateFromResponse(Stream responseStream, WsTrustVersion version)
+        public static WsTrustResponse CreateFromResponse(string response, WsTrustVersion version)
         {
-            XDocument responseDocument = ReadDocumentFromResponse(responseStream);
+            XDocument responseDocument = XDocument.Parse(response, LoadOptions.None); // Could throw XmlException
             return CreateFromResponseDocument(responseDocument, version);
         }
 
         public static string ReadErrorResponse(XDocument responseDocument, RequestContext requestContext)
         {
             string errorMessage = null;
-
-            try
+            XElement body = responseDocument.Descendants(XmlNamespace.SoapEnvelope + "Body").FirstOrDefault();
+            if (body != null)
             {
-                XElement body = responseDocument.Descendants(XmlNamespace.SoapEnvelope + "Body").FirstOrDefault();
-
-                if (body != null)
+                XElement fault = body.Elements(XmlNamespace.SoapEnvelope + "Fault").FirstOrDefault();
+                if (fault != null)
                 {
-                    XElement fault = body.Elements(XmlNamespace.SoapEnvelope + "Fault").FirstOrDefault();
-                    if (fault != null)
-                    {
-                        errorMessage = GetFaultMessage(fault);
-                    }
+                    errorMessage = GetFaultMessage(fault);
                 }
             }
-            catch (XmlException ex)
-            {
-                throw new AdalException(AdalError.ParsingWsTrustResponseFailed, ex);
-            }
-
             return errorMessage;
         }
 
@@ -92,76 +82,57 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory.Internal.WsTrust
             return null;
         }
 
-        internal static XDocument ReadDocumentFromResponse(Stream responseStream)
-        {
-            try
-            {
-                return XDocument.Load(responseStream, LoadOptions.None);
-            }
-            catch (XmlException ex)
-            {
-                throw new AdalException(AdalError.ParsingWsTrustResponseFailed, ex);
-            }
-        }
-
         internal static WsTrustResponse CreateFromResponseDocument(XDocument responseDocument, WsTrustVersion version)
         {
             Dictionary<string, string> tokenResponseDictionary = new Dictionary<string, string>();
 
-            try
+            XNamespace t = XmlNamespace.Trust;
+            if (version == WsTrustVersion.WsTrust2005)
             {
-                XNamespace t = XmlNamespace.Trust;
-                if (version == WsTrustVersion.WsTrust2005)
+                t = XmlNamespace.Trust2005;
+            }
+
+            bool parseResponse = true;
+            if (version == WsTrustVersion.WsTrust13)
+            {
+                XElement requestSecurityTokenResponseCollection =
+                    responseDocument.Descendants(t + "RequestSecurityTokenResponseCollection").FirstOrDefault();
+
+                if (requestSecurityTokenResponseCollection == null)
                 {
-                    t = XmlNamespace.Trust2005;
-                }
-
-                bool parseResponse = true;
-                if (version == WsTrustVersion.WsTrust13)
-                {
-                    XElement requestSecurityTokenResponseCollection =
-                        responseDocument.Descendants(t + "RequestSecurityTokenResponseCollection").FirstOrDefault();
-
-                    if (requestSecurityTokenResponseCollection == null)
-                    {
-                        parseResponse = false;
-                    }
-                }
-
-                if (!parseResponse)
-                {
-                    throw new AdalException(AdalError.ParsingWsTrustResponseFailed);
-                }
-
-                IEnumerable<XElement> tokenResponses =
-                    responseDocument.Descendants(t + "RequestSecurityTokenResponse");
-                foreach (var tokenResponse in tokenResponses)
-                {
-                    XElement tokenTypeElement = tokenResponse.Elements(t + "TokenType").FirstOrDefault();
-                    if (tokenTypeElement == null)
-                    {
-                        continue;
-                    }
-
-                    XElement requestedSecurityToken =
-                        tokenResponse.Elements(t + "RequestedSecurityToken").FirstOrDefault();
-                    if (requestedSecurityToken == null)
-                    {
-                        continue;
-                    }
-                    
-                    tokenResponseDictionary.Add(tokenTypeElement.Value,
-                        requestedSecurityToken.FirstNode.ToString(SaveOptions.DisableFormatting));
+                    parseResponse = false;
                 }
             }
-            catch (XmlException ex)
+
+            if (!parseResponse)
             {
-                throw new AdalException(AdalError.ParsingWsTrustResponseFailed, ex);
+                return null;
+            }
+
+            IEnumerable<XElement> tokenResponses =
+                responseDocument.Descendants(t + "RequestSecurityTokenResponse");
+            foreach (var tokenResponse in tokenResponses)
+            {
+                XElement tokenTypeElement = tokenResponse.Elements(t + "TokenType").FirstOrDefault();
+                if (tokenTypeElement == null)
+                {
+                    continue;
+                }
+
+                XElement requestedSecurityToken =
+                    tokenResponse.Elements(t + "RequestedSecurityToken").FirstOrDefault();
+                if (requestedSecurityToken == null)
+                {
+                    continue;
+                }
+
+                tokenResponseDictionary.Add(tokenTypeElement.Value,
+                    requestedSecurityToken.FirstNode.ToString(SaveOptions.DisableFormatting));
             }
 
             if (tokenResponseDictionary.Count == 0)
             {
-                throw new AdalException(AdalError.ParsingWsTrustResponseFailed);
+                return null;
             }
 
             string tokenType = tokenResponseDictionary.ContainsKey(Saml1Assertion)
