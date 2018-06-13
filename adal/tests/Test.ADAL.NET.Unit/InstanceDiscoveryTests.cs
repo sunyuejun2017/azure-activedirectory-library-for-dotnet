@@ -293,7 +293,9 @@ namespace Test.ADAL.NET.Unit
             AddMockInstanceDiscovery(host);
             await authenticator.UpdateFromTemplateAsync(new RequestContext(new AdalLogger(new Guid())));
 
-            AdalHttpMessageHandlerFactory.AddMockHandler(new MockHttpMessageHandler()
+            Microsoft.Identity.Core.Http.HttpClientFactory.ReturnHttpClientForMocks = true;
+            Microsoft.Identity.Core.Http.HttpMessageHandlerFactory.ClearMockHandlers();
+            Microsoft.Identity.Core.Http.HttpMessageHandlerFactory.AddMockHandler(new MockHttpMessageHandler()
             {
                 Method = HttpMethod.Get,
                 Url = $"https://{preferredNetwork}/common/userrealm/johndoe@contoso.com", // This validates the token request is sending to expected host
@@ -315,7 +317,7 @@ namespace Test.ADAL.NET.Unit
                 requestData, new UserPasswordCredential("johndoe@contoso.com", "fakepassword")));
             await (Task)privateObject.Invoke("PreTokenRequest");
 
-            Assert.AreEqual(0, AdalHttpMessageHandlerFactory.MockHandlersCount()); // This validates that all the mock handlers have been consumed
+            Assert.IsTrue(Microsoft.Identity.Core.Http.HttpMessageHandlerFactory.IsMocksQueueEmpty, "All mocks should have been consumed");
         }
 
         [TestMethod]
