@@ -108,6 +108,11 @@ namespace AutomationApp
 
         private void SetResultPageInfo(AuthenticationResult authenticationResult)
         {
+            if (!String.IsNullOrWhiteSpace(authenticationResult.AccessToken))
+                testResultBox.Text = "Result: Success";
+            else
+                testResultBox.Text = "error";
+
             accessTokenResult.Text = authenticationResult.AccessToken;
             expiresOnResult.Text = authenticationResult.ExpiresOn.ToString();
             tenantIdResult.Text = authenticationResult.TenantId;
