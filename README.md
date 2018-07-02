@@ -14,7 +14,7 @@ Active Directory Authentication Library for .NET (ADAL.NET) is an easy to use au
 ## Build status
 | dev  | adalV3/dev |
 | ------------- | ------------- |
-| [![Build status](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/556/badge)](https://identitydivision.visualstudio.com/IDDP/IDDP%20Team/_build/index?definitionId=556) | [![Build status](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/187/badge)](https://identitydivision.visualstudio.com/IDDP/IDDP%20Team/_build/index?definitionId=187)
+| [![Build status](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/556/badge)](https://identitydivision.visualstudio.com/IDDP/IDDP%20Team/_build/index?definitionId=556) | [![Build status](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/313/badge)](https://identitydivision.visualstudio.com/IDDP/IDDP%20Team/_build/index?definitionId=313)
 
 
 ## Versions
