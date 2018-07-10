@@ -103,6 +103,8 @@
     <Compile Include="Helpers\**\*.cs" />
     <Compile Include="Telemetry\**\*.cs" />
     <Compile Include="OAuth2\**\*.cs" />
+    <Compile Include="Realm\**\*.cs" />
+    <Compile Include="WsTrust\**\*.cs" />
     <Compile Include="Cache\**\*.cs" />
     <Compile Include="Properties\**\*.cs" />
     <Compile Include="Internal\**\*.cs" />
@@ -120,7 +122,7 @@
     <AssemblyOriginatorKeyFile>build\Core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
