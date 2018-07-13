@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using Microsoft.Identity.Client.Internal;
 using Microsoft.Identity.Core;
 using Microsoft.Identity.Core.Cache;
+using Microsoft.Identity.Core.Helpers;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -50,9 +51,40 @@ namespace XForms
         private void RefreshCacheView()
         {
             var tokenCache = App.MsalPublicClient.UserTokenCache;
-            accessTokenCacheItems.ItemsSource = tokenCache.GetAllAccessTokensForClient(new RequestContext(new MsalLogger(Guid.NewGuid(), null)));
 
-            refreshTokenCacheItems.ItemsSource = tokenCache.GetAllRefreshTokensForClient(new RequestContext(new MsalLogger(Guid.NewGuid(), null)));
+            var requestContext = new RequestContext(new MsalLogger(Guid.NewGuid(), null));
+
+            IDictionary<string, MsalAccessTokenCacheItem> accessTokens = new Dictionary<string, MsalAccessTokenCacheItem>();
+            foreach (var accessItemStr in tokenCache.GetAllAccessTokenCacheItems(requestContext))
+            {
+                MsalAccessTokenCacheItem accessItem = JsonHelper.DeserializeFromJson<MsalAccessTokenCacheItem>(accessItemStr);
+                accessTokens.Add(accessItem.GetKey().ToString(), accessItem);
+            }
+            accessTokenCacheItems.ItemsSource = accessTokens;
+
+            IDictionary<string, MsalRefreshTokenCacheItem> refreshTokens = new Dictionary<string, MsalRefreshTokenCacheItem>();
+            foreach (var refreshItemStr in tokenCache.GetAllRefreshTokenCacheItems(requestContext))
+            {
+                MsalRefreshTokenCacheItem refreshItem = JsonHelper.DeserializeFromJson<MsalRefreshTokenCacheItem>(refreshItemStr);
+                refreshTokens.Add(refreshItem.GetKey().ToString(), refreshItem);
+            }
+            refreshTokenCacheItems.ItemsSource = refreshTokens;
+
+            IDictionary<string, MsalIdTokenCacheItem> idTokens = new Dictionary<string, MsalIdTokenCacheItem>();
+            foreach (var idItemStr in tokenCache.GetAllIdTokenCacheItems(requestContext))
+            {
+                MsalIdTokenCacheItem idItem = JsonHelper.DeserializeFromJson<MsalIdTokenCacheItem>(idItemStr);
+                idTokens.Add(idItem.GetKey().ToString(), idItem);
+            }
+            idTokenCacheItems.ItemsSource = idTokens;
+
+            IDictionary<string, MsalAccountCacheItem> accounts = new Dictionary<string, MsalAccountCacheItem>();
+            foreach (var accountStr in tokenCache.GetAllAccountCacheItems(requestContext))
+            {
+                MsalAccountCacheItem accountItem = JsonHelper.DeserializeFromJson<MsalAccountCacheItem>(accountStr);
+                accounts.Add(accountItem.GetKey().ToString(), accountItem);
+            }
+            accountsCacheItems.ItemsSource = accounts;
         }
 
         protected override void OnAppearing()
@@ -98,7 +130,10 @@ namespace XForms
             var accessTokenCacheItem = (MsalAccessTokenCacheItem)mi.CommandParameter;
 
             var tokenCache = App.MsalPublicClient.UserTokenCache;
-            tokenCache.DeleteAccessToken(accessTokenCacheItem);
+            // todo pass idToken instead of null
+            var requestContext = new RequestContext(new MsalLogger(Guid.NewGuid(), null));
+
+            tokenCache.DeleteAccessToken(accessTokenCacheItem, null, requestContext);
 
             RefreshCacheView();
         }
@@ -110,7 +145,7 @@ namespace XForms
             var tokenCache = App.MsalPublicClient.UserTokenCache;
 
             // invalidate refresh token
-            refreshTokenCacheItem.RefreshToken = "InvalidValue";
+            refreshTokenCacheItem.Secret = "InvalidValue";
 
             // update entry in the cache
             tokenCache.AddRefreshTokenCacheItem(refreshTokenCacheItem);
@@ -123,7 +158,8 @@ namespace XForms
             var mi = (MenuItem) sender;
             var accessTokenCacheItem = (MsalAccessTokenCacheItem) mi.CommandParameter;
 
-            await Navigation.PushAsync(new AccessTokenCacheItemDetails(accessTokenCacheItem));
+            // pass idtoken instead of null
+            await Navigation.PushAsync(new AccessTokenCacheItemDetails(accessTokenCacheItem, null));
         }
 
         public async Task ShowRefreshTokenDetails(object sender, EventArgs e)
@@ -132,6 +168,24 @@ namespace XForms
             var refreshTokenCacheItem = (MsalRefreshTokenCacheItem)mi.CommandParameter;
 
             await Navigation.PushAsync(new RefreshTokenCacheItemDetails(refreshTokenCacheItem));
+        }
+
+        public async Task ShowIdTokenDetails(object sender, EventArgs e)
+        {
+            var mi = (MenuItem)sender;
+            var idTokenCacheItem = (MsalIdTokenCacheItem)mi.CommandParameter;
+
+            // pass idtoken instead of null
+            await Navigation.PushAsync(new IdTokenCacheItemDetails(idTokenCacheItem));
+        }
+
+        public async Task ShowAccountDetails(object sender, EventArgs e)
+        {
+            var mi = (MenuItem)sender;
+            var accountCacheItem = (MsalAccountCacheItem)mi.CommandParameter;
+
+            // pass idtoken instead of null
+            await Navigation.PushAsync(new AccountCacheItemDetails(accountCacheItem));
         }
     }
 }

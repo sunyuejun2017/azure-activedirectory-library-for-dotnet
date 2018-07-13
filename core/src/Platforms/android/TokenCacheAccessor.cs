@@ -29,6 +29,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Core.Cache;
+using System.Collections.ObjectModel;
+using Microsoft.Identity.Core.Helpers;
 
 namespace Microsoft.Identity.Core
 {
@@ -36,8 +38,14 @@ namespace Microsoft.Identity.Core
     {
         private const string AccessTokenSharedPreferenceName = "com.microsoft.identity.client.accessToken";
         private const string RefreshTokenSharedPreferenceName = "com.microsoft.identity.client.refreshToken";
+        private const string IdTokenSharedPreferenceName = "com.microsoft.identity.client.idToken";
+        private const string AccountSharedPreferenceName = "com.microsoft.identity.client.Account";
+
         private readonly ISharedPreferences _accessTokenSharedPreference;
         private readonly ISharedPreferences _refreshTokenSharedPreference;
+        private readonly ISharedPreferences _idTokenSharedPreference;
+        private readonly ISharedPreferences _accountSharedPreference;
+
         private RequestContext _requestContext;
 
         public TokenCacheAccessor()
@@ -46,8 +54,13 @@ namespace Microsoft.Identity.Core
                     FileCreationMode.Private);
             _refreshTokenSharedPreference = Application.Context.GetSharedPreferences(RefreshTokenSharedPreferenceName,
                     FileCreationMode.Private);
+            _idTokenSharedPreference = Application.Context.GetSharedPreferences(IdTokenSharedPreferenceName,
+                    FileCreationMode.Private);
+            _accountSharedPreference = Application.Context.GetSharedPreferences(AccountSharedPreferenceName,
+                FileCreationMode.Private);
 
-            if (_accessTokenSharedPreference == null || _refreshTokenSharedPreference == null)
+            if (_accessTokenSharedPreference == null || _refreshTokenSharedPreference == null
+                || _idTokenSharedPreference == null || _accountSharedPreference == null)
             {
                 throw new MsalException("Fail to create SharedPreference");
             }
@@ -58,38 +71,65 @@ namespace Microsoft.Identity.Core
             _requestContext = requestContext;
         }
 
-        public void SaveAccessToken(string cacheKey, string item)
+        public void SaveAccessToken(MsalAccessTokenCacheItem item)
         {
             ISharedPreferencesEditor editor = _accessTokenSharedPreference.Edit();
-            editor.PutString(cacheKey, item);
+            editor.PutString(item.GetKey().ToString(), JsonHelper.SerializeToJson(item));
             editor.Apply();
         }
 
-        public void SaveRefreshToken(string cacheKey, string item)
+        public void SaveRefreshToken(MsalRefreshTokenCacheItem item)
         {
             ISharedPreferencesEditor editor = _refreshTokenSharedPreference.Edit();
-            editor.PutString(cacheKey, item);
+            editor.PutString(item.GetKey().ToString(), JsonHelper.SerializeToJson(item));
             editor.Apply();
         }
 
-        public string GetRefreshToken(string refreshTokenKey)
+        public void SaveIdToken(MsalIdTokenCacheItem item)
         {
-            return _refreshTokenSharedPreference.GetString(refreshTokenKey, null);
+            ISharedPreferencesEditor editor = _idTokenSharedPreference.Edit();
+            editor.PutString(item.GetKey().ToString(), JsonHelper.SerializeToJson(item));
+            editor.Apply();
         }
 
-        public void DeleteAccessToken(string cacheKey)
+        public void SaveAccount(MsalAccountCacheItem item)
         {
-            Delete(cacheKey, _accessTokenSharedPreference.Edit());
+            ISharedPreferencesEditor editor = _accountSharedPreference.Edit();
+            editor.PutString(item.GetKey().ToString(), JsonHelper.SerializeToJson(item));
+            editor.Apply();
         }
 
-        public void DeleteRefreshToken(string cacheKey)
+        public void DeleteAccessToken(MsalAccessTokenCacheKey cacheKey)
         {
-            Delete(cacheKey, _refreshTokenSharedPreference.Edit());
+            Delete(cacheKey.ToString(), _accessTokenSharedPreference.Edit());
+        }
+
+        public void DeleteRefreshToken(MsalRefreshTokenCacheKey cacheKey)
+        {
+            Delete(cacheKey.ToString(), _refreshTokenSharedPreference.Edit());
+        }
+
+        public void DeleteIdToken(MsalIdTokenCacheKey cacheKey)
+        {
+            Delete(cacheKey.ToString(), _idTokenSharedPreference.Edit());
+        }
+
+        public void DeleteAccount(MsalAccountCacheKey cacheKey)
+        {
+            Delete(cacheKey.ToString(), _accountSharedPreference.Edit());
         }
 
         private void Delete(string key, ISharedPreferencesEditor editor)
         {
             editor.Remove(key);
+            editor.Apply();
+        }
+
+        private void DeleteAll(ISharedPreferences sharedPreferences)
+        {
+            var editor = sharedPreferences.Edit();
+
+            editor.Clear();
             editor.Apply();
         }
 
@@ -103,6 +143,16 @@ namespace Microsoft.Identity.Core
             return _refreshTokenSharedPreference.All.Values.Cast<string>().ToList();
         }
 
+        public ICollection<string> GetAllIdTokensAsString()
+        {
+            return _idTokenSharedPreference.All.Values.Cast<string>().ToList();
+        }
+
+        public ICollection<string> GetAllAccountsAsString()
+        {
+            return _accountSharedPreference.All.Values.Cast<string>().ToList();
+        }
+        /*
         public ICollection<string> GetAllAccessTokenKeys()
         {
             return _accessTokenSharedPreference.All.Keys.ToList();
@@ -113,17 +163,47 @@ namespace Microsoft.Identity.Core
             return _refreshTokenSharedPreference.All.Keys.ToList();
         }
 
+        public ICollection<string> GetAllIdTokenKeys()
+        {
+            return _idTokenSharedPreference.All.Keys.ToList();
+        }
+
+        public ICollection<string> GetAllAccountKeys()
+        {
+            return _accountSharedPreference.All.Keys.ToList();
+        }
+        */
         public void Clear()
         {
-            foreach (var key in GetAllAccessTokenKeys())
-            {
-                DeleteAccessToken(key);
-            }
+            DeleteAll(_accessTokenSharedPreference);
+            DeleteAll(_refreshTokenSharedPreference);
+            DeleteAll(_idTokenSharedPreference);
+            DeleteAll(_accessTokenSharedPreference);
+        }
 
-            foreach (var key in GetAllRefreshTokenKeys())
-            {
-                DeleteRefreshToken(key);
-            }
+        public string GetAccessToken(MsalAccessTokenCacheKey accessTokenKey)
+        {
+            return _accessTokenSharedPreference.GetString(accessTokenKey.ToString(), null);
+        }
+
+        public string GetRefreshToken(MsalRefreshTokenCacheKey refreshTokenKey)
+        {
+            return _refreshTokenSharedPreference.GetString(refreshTokenKey.ToString(), null);
+        }
+
+        public string GetIdToken(MsalIdTokenCacheKey idTokenKey)
+        {
+            return _idTokenSharedPreference.GetString(idTokenKey.ToString(), null);
+        }
+
+        public string GetAccount(MsalAccountCacheKey accountKey)
+        {
+            return _accountSharedPreference.GetString(accountKey.ToString(), null);
+        }
+
+        public void SetSecurityGroup(string securityGroup)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

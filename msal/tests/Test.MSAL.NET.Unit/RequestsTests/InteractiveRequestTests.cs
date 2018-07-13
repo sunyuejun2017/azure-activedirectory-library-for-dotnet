@@ -43,6 +43,7 @@ using Microsoft.Identity.Core.Instance;
 using Microsoft.Identity.Core.OAuth2;
 using Microsoft.Identity.Core.Telemetry;
 using Test.Microsoft.Identity.Core.Unit;
+using Test.Microsoft.Identity.Core.Unit.Mocks;
 using Microsoft.Identity.Core.UI;
 
 namespace Test.MSAL.NET.Unit.RequestsTests
@@ -66,8 +67,8 @@ namespace Test.MSAL.NET.Unit.RequestsTests
         [TestCleanup]
         public void TestCleanup()
         {
-            cache.TokenCacheAccessor.AccessTokenCacheDictionary.Clear();
-            cache.TokenCacheAccessor.RefreshTokenCacheDictionary.Clear();
+            cache.tokenCacheAccessor.AccessTokenCacheDictionary.Clear();
+            cache.tokenCacheAccessor.RefreshTokenCacheDictionary.Clear();
         }
 
         [TestMethod]
@@ -129,8 +130,8 @@ namespace Test.MSAL.NET.Unit.RequestsTests
             task.Wait();
             AuthenticationResult result = task.Result;
             Assert.IsNotNull(result);
-            Assert.AreEqual(1, cache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
-            Assert.AreEqual(1, cache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(1, cache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(1, cache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
             Assert.AreEqual(result.AccessToken, "some-access-token");
 
             Assert.IsTrue(HttpMessageHandlerFactory.IsMocksQueueEmpty, "All mocks should have been consumed");
@@ -146,21 +147,19 @@ namespace Test.MSAL.NET.Unit.RequestsTests
                 ClientId = TestConstants.ClientId
             };
 
-            MsalAccessTokenCacheItem atItem = new MsalAccessTokenCacheItem()
-            {
-                Authority = TestConstants.AuthorityHomeTenant,
-                ClientId = TestConstants.ClientId,
-                RawIdToken = MockHelpers.CreateIdToken(TestConstants.UniqueId, TestConstants.DisplayableId),
-                RawClientInfo = MockHelpers.CreateClientInfo(),
-                TokenType = "Bearer",
-                ExpiresOnUnixTimestamp = CoreHelpers.DateTimeToUnixTimestamp(DateTime.UtcNow + TimeSpan.FromSeconds(3599)),
-                ScopeSet = TestConstants.Scope
-            };
-            atItem.IdToken = IdToken.Parse(atItem.RawIdToken);
-            atItem.ClientInfo = ClientInfo.CreateFromJson(atItem.RawClientInfo);
-            MsalAccessTokenCacheKey atKey = atItem.GetAccessTokenItemKey();
-            atItem.AccessToken = atKey.ToString();
-            cache.TokenCacheAccessor.AccessTokenCacheDictionary[atKey.ToString()] = JsonHelper.SerializeToJson(atItem);
+            var atItem = new MsalAccessTokenCacheItem(
+                TestConstants.ProductionEnvironment,
+                TestConstants.ClientId,
+                "Bearer",
+                TestConstants.Scope.AsSingleString(),
+                TestConstants.Utid,
+                null,
+                new DateTimeOffset(DateTime.UtcNow + TimeSpan.FromSeconds(3599)),
+                MockHelpers.CreateClientInfo());
+
+            string atKey = atItem.GetKey().ToString();
+            atItem.Secret = atKey;
+            cache.tokenCacheAccessor.AccessTokenCacheDictionary[atKey] = JsonHelper.SerializeToJson(atItem);
 
             MockWebUI ui = new MockWebUI()
             {
@@ -201,8 +200,8 @@ namespace Test.MSAL.NET.Unit.RequestsTests
             task.Wait();
             AuthenticationResult result = task.Result;
             Assert.IsNotNull(result);
-            Assert.AreEqual(1, cache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
-            Assert.AreEqual(2, cache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(1, cache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(2, cache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
             Assert.AreEqual(result.AccessToken, "some-access-token");
 
             Assert.IsTrue(HttpMessageHandlerFactory.IsMocksQueueEmpty, "All mocks should have been consumed");
@@ -211,6 +210,8 @@ namespace Test.MSAL.NET.Unit.RequestsTests
                 anEvent[EventBase.EventNameKey].EndsWith("ui_event") && anEvent[UiEvent.UserCancelledKey] == "false"));
             Assert.IsNotNull(_myReceiver.EventsReceived.Find(anEvent =>  // Expect finding such an event
                 anEvent[EventBase.EventNameKey].EndsWith("api_event") && anEvent[ApiEvent.UiBehaviorKey] == "select_account"));
+            Assert.IsNotNull(_myReceiver.EventsReceived.Find(anEvent =>  // Expect finding such an event
+                anEvent[EventBase.EventNameKey].EndsWith("ui_event") && anEvent[UiEvent.AccessDeniedKey] == "false"));
         }
 
         [TestMethod]

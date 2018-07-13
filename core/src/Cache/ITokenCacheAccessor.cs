@@ -31,23 +31,48 @@ namespace Microsoft.Identity.Core.Cache
 {
     internal interface ITokenCacheAccessor
     {
-        void SaveAccessToken(string cacheKey, string item);
+        void SaveAccessToken(MsalAccessTokenCacheItem item);
 
-        void SaveRefreshToken(string cacheKey, string item);
+        void SaveRefreshToken(MsalRefreshTokenCacheItem item);
 
-        string GetRefreshToken(string refreshTokenKey);
+        void SaveIdToken(MsalIdTokenCacheItem item);
 
-        void DeleteAccessToken(string cacheKey);
+        void SaveAccount(MsalAccountCacheItem item);
 
-        void DeleteRefreshToken(string cacheKey);
+        string GetAccessToken(MsalAccessTokenCacheKey accessTokenKey);
+
+        string GetRefreshToken(MsalRefreshTokenCacheKey refreshTokenKey);
+
+        string GetIdToken(MsalIdTokenCacheKey idTokenKey);
+
+        string GetAccount(MsalAccountCacheKey accountKey);
+
+        void DeleteAccessToken(MsalAccessTokenCacheKey cacheKey);
+
+        void DeleteRefreshToken(MsalRefreshTokenCacheKey cacheKey);
+
+        void DeleteIdToken(MsalIdTokenCacheKey cacheKey);
+
+        void DeleteAccount(MsalAccountCacheKey cacheKey);
 
         ICollection<string> GetAllAccessTokensAsString();
 
         ICollection<string> GetAllRefreshTokensAsString();
 
+        ICollection<string> GetAllIdTokensAsString();
+
+        ICollection<string> GetAllAccountsAsString();
+
+        /*
         ICollection<string> GetAllAccessTokenKeys();
 
         ICollection<string> GetAllRefreshTokenKeys();
+
+        ICollection<string> GetAllIdTokenKeys();
+
+        ICollection<string> GetAllAccountKeys();
+        */
+        void SetSecurityGroup(string securityGroup);
 
         void Clear();
     }

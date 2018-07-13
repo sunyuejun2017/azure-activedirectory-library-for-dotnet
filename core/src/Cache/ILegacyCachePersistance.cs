@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //
 // Copyright (c) Microsoft Corporation.
 // All rights reserved.
@@ -25,47 +25,18 @@
 //
 //------------------------------------------------------------------------------
 
-using System.Globalization;
-using System.Runtime.Serialization;
-using Microsoft.Identity.Core.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.Identity.Core.Cache
 {
-    /// <summary>
-    /// Token cache item
-    /// </summary>
-    [DataContract]
-    internal abstract class MsalTokenCacheItemBase
+    internal interface ILegacyCachePersistance
     {
-        internal const int CacheVersion = 1;
+        byte[] LoadCache();
 
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public MsalTokenCacheItemBase(string clientId)
-        {
-            ClientId = clientId;
-        }
-
-        public MsalTokenCacheItemBase()
-        {
-        }
-
-        [DataMember(Name = "ver", IsRequired = false)]
-        public int Version { get; set; } = CacheVersion;
-
-        [DataMember(Name = "client_info")]
-        public string RawClientInfo { get; set; }
-
-        [DataMember(Name = "client_id")]
-        public string ClientId { get; set; }
-
-        public ClientInfo ClientInfo { get; set; }
-
-        internal string GetUserIdentifier()
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0}.{1}", Base64UrlHelpers.Encode(ClientInfo?.UniqueIdentifier),
-                Base64UrlHelpers.Encode(ClientInfo?.UniqueTenantIdentifier));
-        }
+        void WriteCache(byte[] serializedCache);
     }
 }

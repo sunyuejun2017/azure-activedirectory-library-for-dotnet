@@ -44,6 +44,7 @@ using Microsoft.Identity.Core.Instance;
 using Microsoft.Identity.Core.Telemetry;
 using NSubstitute;
 using Test.Microsoft.Identity.Core.Unit;
+using Test.Microsoft.Identity.Core.Unit.Mocks;
 
 namespace Test.MSAL.NET.Unit
 {
@@ -98,10 +99,10 @@ namespace Test.MSAL.NET.Unit
             IList<IUser> users = new List<IUser>();
 
             IUser mockUser1 = Substitute.For<IUser>();
-            mockUser1.Name.Returns("Name1");
+            mockUser1.DisplayableId.Returns("DisplayableId_1");
 
             IUser mockUser2 = Substitute.For<IUser>();
-            mockUser2.Name.Returns("Name2");
+            mockUser2.DisplayableId.Returns("DisplayableId_2");
 
             users.Add(mockUser1);
             users.Add(mockUser2);
@@ -114,8 +115,8 @@ namespace Test.MSAL.NET.Unit
             Assert.IsNotNull(actualUsers);
             Assert.AreEqual(2, actualUsers.Count());
 
-            Assert.AreEqual("Name1", users.First().Name);
-            Assert.AreEqual("Name2", users.Last().Name);
+            Assert.AreEqual("DisplayableId_1", users.First().DisplayableId);
+            Assert.AreEqual("DisplayableId_2", users.Last().DisplayableId);
         }
 
         [TestMethod]
@@ -230,12 +231,12 @@ namespace Test.MSAL.NET.Unit
             Assert.AreEqual(TestConstants.Scope.AsSingleString(), result.Scopes.AsSingleString());
 
             //make sure user token cache is empty
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
 
             //check app token cache count to be 1
-            Assert.AreEqual(1, app.AppTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.AppTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
+            Assert.AreEqual(1, app.AppTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.AppTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
 
             Assert.IsTrue(HttpMessageHandlerFactory.IsMocksQueueEmpty, "All mocks should have been consumed");
 
@@ -247,12 +248,12 @@ namespace Test.MSAL.NET.Unit
             Assert.AreEqual(TestConstants.Scope.AsSingleString(), result.Scopes.AsSingleString());
 
             //make sure user token cache is empty
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
 
             //check app token cache count to be 1
-            Assert.AreEqual(1, app.AppTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.AppTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
+            Assert.AreEqual(1, app.AppTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.AppTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
         }
 
         private ConfidentialClientApplication CreateConfidentialClient(ClientCredential cc)
@@ -300,12 +301,12 @@ namespace Test.MSAL.NET.Unit
             Assert.AreEqual(TestConstants.Scope.AsSingleString(), result.Scopes.AsSingleString());
 
             //make sure user token cache is empty
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.UserTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.UserTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
 
             //check app token cache count to be 1
-            Assert.AreEqual(1, app.AppTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(0, app.AppTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
+            Assert.AreEqual(1, app.AppTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(0, app.AppTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count); //no refresh tokens are returned
 
             //assert client credential
             Assert.IsNotNull(cc.Assertion);
@@ -538,9 +539,9 @@ namespace Test.MSAL.NET.Unit
         public void ForceRefreshParameterFalseTestAsync()
         {
             var cache = new TokenCache();
-            TokenCacheHelper.PopulateCache(cache.TokenCacheAccessor);
+            TokenCacheHelper.PopulateCacheForClientCredential(cache.tokenCacheAccessor);
 
-            var authority = Authority.CreateAuthority(TestConstants.AuthorityHomeTenant, false).CanonicalAuthority;
+            var authority = Authority.CreateAuthority(TestConstants.AuthorityTestTenant, false).CanonicalAuthority;
             var app = new ConfidentialClientApplication(TestConstants.ClientId, authority,
                 TestConstants.RedirectUri, new ClientCredential(TestConstants.ClientSecret),
                 null, cache)
@@ -564,7 +565,7 @@ namespace Test.MSAL.NET.Unit
             var task = app.AcquireTokenForClientAsync(TestConstants.Scope, false);
             var result = task.Result;
 
-            Assert.AreEqual(accessTokenInCache?.AccessToken, result.AccessToken);
+            Assert.AreEqual(accessTokenInCache.Secret, result.AccessToken);
         }
 
         [TestMethod]
@@ -572,9 +573,9 @@ namespace Test.MSAL.NET.Unit
         public async Task ForceRefreshParameterTrueTestAsync()
         {
             var cache = new TokenCache();
-            TokenCacheHelper.PopulateCache(cache.TokenCacheAccessor);
+            TokenCacheHelper.PopulateCache(cache.tokenCacheAccessor);
 
-            var authority = Authority.CreateAuthority(TestConstants.AuthorityHomeTenant, false).CanonicalAuthority;
+            var authority = Authority.CreateAuthority(TestConstants.AuthorityTestTenant, false).CanonicalAuthority;
             var app = new ConfidentialClientApplication(TestConstants.ClientId, authority,
                 TestConstants.RedirectUri, new ClientCredential(TestConstants.ClientSecret),
                 null, cache)
@@ -609,7 +610,7 @@ namespace Test.MSAL.NET.Unit
                 .ToList()
                 .FirstOrDefault();
 
-            Assert.AreEqual(tokenRetrievedFromNetCall, accessTokenInCache?.AccessToken);
+            Assert.AreEqual(tokenRetrievedFromNetCall, accessTokenInCache.Secret);
             Assert.IsNotNull(_myReceiver.EventsReceived.Find(anEvent =>  // Expect finding such an event
                 anEvent[EventBase.EventNameKey].EndsWith("api_event") && anEvent[ApiEvent.WasSuccessfulKey] == "true"
                 && anEvent[ApiEvent.ApiIdKey] == "727"));
@@ -648,8 +649,8 @@ namespace Test.MSAL.NET.Unit
 
             AuthenticationResult result = await app.AcquireTokenByAuthorizationCodeAsync("some-code", TestConstants.Scope).ConfigureAwait(false);
             Assert.IsNotNull(result);
-            Assert.AreEqual(1, app.UserTokenCache.TokenCacheAccessor.AccessTokenCacheDictionary.Count);
-            Assert.AreEqual(1, app.UserTokenCache.TokenCacheAccessor.RefreshTokenCacheDictionary.Count);
+            Assert.AreEqual(1, app.UserTokenCache.tokenCacheAccessor.AccessTokenCacheDictionary.Count);
+            Assert.AreEqual(1, app.UserTokenCache.tokenCacheAccessor.RefreshTokenCacheDictionary.Count);
 
             cache = new TokenCache()
             {

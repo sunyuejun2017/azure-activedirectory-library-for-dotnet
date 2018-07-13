@@ -26,26 +26,30 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.Identity.Core.Cache
 {
-    internal abstract class MsalTokenCacheKeyBase
+    internal class MsalAccountCacheKey : MsalCacheKeyBase
     {
-        public const string CacheKeyDelimiter = "$";
-
-        public MsalTokenCacheKeyBase(string clientId, string userIdentifier)
+        public MsalAccountCacheKey(string environment, string tenantId, string userIdentifier) : base(environment, userIdentifier)
         {
-            ClientId = clientId;
-            UserIdentifier = userIdentifier;
+            TenantId = tenantId;
         }
+        internal string TenantId { get; set; }
 
-        public string ClientId { get; set; }
-
-        public string UserIdentifier { get; set; }
-
-        protected bool Equals(string string1, string string2)
+        public override string ToString()
         {
-            return (string.Compare(string2, string1, StringComparison.OrdinalIgnoreCase) == 0);
+            var stringBuilder = new StringBuilder();
+
+            stringBuilder.Append(HomeAccountId + CacheKeyDelimiter);
+            stringBuilder.Append(Environment + CacheKeyDelimiter);
+            stringBuilder.Append(TenantId);
+
+            return stringBuilder.ToString();
         }
     }
 }

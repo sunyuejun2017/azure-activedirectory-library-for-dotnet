@@ -42,8 +42,14 @@ namespace Microsoft.Identity.Core
         private const int MaxCompositeValueLength = 1024;
         private const string LocalSettingsTokenContainerName = "MicrosoftAuthenticationLibrary.AccessTokens";
         private const string LocalSettingsRefreshTokenContainerName = "MicrosoftAuthenticationLibrary.RefreshTokens";
+        private const string LocalSettingsIdTokenContainerName = "MicrosoftAuthenticationLibrary.IdTokens";
+        private const string LocalSettingsAccountContainerName = "MicrosoftAuthenticationLibrary.Accounts";
+
         private ApplicationDataContainer _refreshTokenContainer = null;
         private ApplicationDataContainer _accessTokenContainer = null;
+        private ApplicationDataContainer _idTokenContainer = null;
+        private ApplicationDataContainer _accountContainer = null;
+
         private RequestContext _requestContext;
 
         public TokenCacheAccessor()
@@ -54,41 +60,113 @@ namespace Microsoft.Identity.Core
             _refreshTokenContainer =
                 localSettings.CreateContainer(LocalSettingsRefreshTokenContainerName,
                     ApplicationDataCreateDisposition.Always);
+            _idTokenContainer = 
+                localSettings.CreateContainer(LocalSettingsIdTokenContainerName, 
+                    ApplicationDataCreateDisposition.Always);
+            _accountContainer =
+                localSettings.CreateContainer(LocalSettingsAccountContainerName,
+                    ApplicationDataCreateDisposition.Always);
         }
         public TokenCacheAccessor(RequestContext requestContext) : this()
         {
             _requestContext = requestContext;
         }
 
-        public void SaveAccessToken(string cacheKey, string item)
+        public void SaveAccessToken(MsalAccessTokenCacheItem item)
         {
             ApplicationDataCompositeValue composite = new ApplicationDataCompositeValue();
-            SetCacheValue(composite, item);
-            _accessTokenContainer.Values[CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)] = composite;
+            SetCacheValue(composite, JsonHelper.SerializeToJson(item));
+            _accessTokenContainer.Values[/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/item.GetKey().ToString()] = composite;
         }
 
-        public void SaveRefreshToken(string cacheKey, string item)
+        public void SaveRefreshToken(MsalRefreshTokenCacheItem item)
         {
             ApplicationDataCompositeValue composite = new ApplicationDataCompositeValue();
-            SetCacheValue(composite, item);
-            _refreshTokenContainer.Values[CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)] = composite;
+            SetCacheValue(composite, JsonHelper.SerializeToJson(item));
+            _refreshTokenContainer.Values[/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/item.GetKey().ToString()] = composite;
         }
 
-        public string GetRefreshToken(string refreshTokenKey)
+        public void SaveIdToken(MsalIdTokenCacheItem item)
         {
+            ApplicationDataCompositeValue composite = new ApplicationDataCompositeValue();
+            SetCacheValue(composite, JsonHelper.SerializeToJson(item));
+            _idTokenContainer.Values[/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/item.GetKey().ToString()] = composite;
+        }
+
+        public void SaveAccount(MsalAccountCacheItem item)
+        {
+            ApplicationDataCompositeValue composite = new ApplicationDataCompositeValue();
+            SetCacheValue(composite, JsonHelper.SerializeToJson(item));
+            _accountContainer.Values[/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/item.GetKey().ToString()] = composite;
+        }
+
+        public string GetAccessToken(MsalAccessTokenCacheKey accessTokenKey)
+        {
+            var keyStr = accessTokenKey.ToString();
+            if (!_accessTokenContainer.Values.ContainsKey(/*encodedKey*/keyStr))
+            {
+                return null;
+            }
             return CoreHelpers.ByteArrayToString(
-                GetCacheValue((ApplicationDataCompositeValue) _refreshTokenContainer.Values[
-                    CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(refreshTokenKey)]));
-        }
-        
-        public void DeleteAccessToken(string cacheKey)
-        {
-            _accessTokenContainer.Values.Remove(CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey));
+                GetCacheValue((ApplicationDataCompositeValue)_accessTokenContainer.Values[
+                    /*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(accessTokenKey)*/keyStr]));
         }
 
-        public void DeleteRefreshToken(string cacheKey)
+        public string GetRefreshToken(MsalRefreshTokenCacheKey refreshTokenKey)
         {
-            _refreshTokenContainer.Values.Remove(CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey));
+            var keyStr = refreshTokenKey.ToString();
+            //var encodedKey = CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(refreshTokenKey);
+            if (!_refreshTokenContainer.Values.ContainsKey(/*encodedKey*/keyStr))
+            {
+                return null;
+            }
+            return CoreHelpers.ByteArrayToString(
+                GetCacheValue((ApplicationDataCompositeValue)_refreshTokenContainer.Values[/*encodedKey*/keyStr]));
+        }
+
+        public string GetIdToken(MsalIdTokenCacheKey idTokenKey)
+        {
+            var keyStr = idTokenKey.ToString();
+            if (!_idTokenContainer.Values.ContainsKey(/*encodedKey*/keyStr))
+            {
+                return null;
+            }
+            return CoreHelpers.ByteArrayToString(
+                GetCacheValue((ApplicationDataCompositeValue)_idTokenContainer.Values[
+                    /*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(idTokenKey)*/keyStr]));
+        }
+
+        public string GetAccount(MsalAccountCacheKey accountKey)
+        {
+            var keyStr = accountKey.ToString();
+            if (!_accountContainer.Values.ContainsKey(/*encodedKey*/keyStr))
+            {
+                return null;
+            }
+
+            return CoreHelpers.ByteArrayToString(
+                GetCacheValue((ApplicationDataCompositeValue)_accountContainer.Values[
+                    /*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(accountKey)*/keyStr]));
+        }
+
+        public void DeleteAccessToken(MsalAccessTokenCacheKey cacheKey)
+        {
+            _accessTokenContainer.Values.Remove(/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/cacheKey.ToString());
+        }
+
+        public void DeleteRefreshToken(MsalRefreshTokenCacheKey cacheKey)
+        {
+            _refreshTokenContainer.Values.Remove(/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/cacheKey.ToString());
+        }
+
+        public void DeleteIdToken(MsalIdTokenCacheKey cacheKey)
+        {
+            _idTokenContainer.Values.Remove(/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/cacheKey.ToString());
+        }
+
+        public void DeleteAccount(MsalAccountCacheKey cacheKey)
+        {
+            _accountContainer.Values.Remove(/*CoreCryptographyHelpers.CreateBase64UrlEncodedSha256Hash(cacheKey)*/cacheKey.ToString());
         }
 
         public ICollection<string> GetAllAccessTokensAsString()
@@ -106,6 +184,28 @@ namespace Microsoft.Identity.Core
         {
             ICollection<string> list = new List<string>();
             foreach (ApplicationDataCompositeValue item in _refreshTokenContainer.Values.Values)
+            {
+                list.Add(CoreHelpers.CreateString(GetCacheValue(item)));
+            }
+
+            return list;
+        }
+
+        public ICollection<string> GetAllIdTokensAsString()
+        {
+            ICollection<string> list = new List<string>();
+            foreach (ApplicationDataCompositeValue item in _idTokenContainer.Values.Values)
+            {
+                list.Add(CoreHelpers.CreateString(GetCacheValue(item)));
+            }
+
+            return list;
+        }
+
+        public ICollection<string> GetAllAccountsAsString()
+        {
+            ICollection<string> list = new List<string>();
+            foreach (ApplicationDataCompositeValue item in _accountContainer.Values.Values)
             {
                 list.Add(CoreHelpers.CreateString(GetCacheValue(item)));
             }
@@ -163,7 +263,7 @@ namespace Microsoft.Identity.Core
 
             return CoreCryptographyHelpers.Decrypt(encryptedValue);
         }
-
+        /*
         public ICollection<string> GetAllAccessTokenKeys()
         {
             return new ReadOnlyCollection<string>(_accessTokenContainer.Values.Keys.ToList());
@@ -174,16 +274,27 @@ namespace Microsoft.Identity.Core
             return new ReadOnlyCollection<string>(_refreshTokenContainer.Values.Keys.ToList());
         }
 
+        public ICollection<string> GetAllIdTokenKeys()
+        {
+            return new ReadOnlyCollection<string>(_idTokenContainer.Values.Keys.ToList());
+        }
+
+        public ICollection<string> GetAllAccountKeys()
+        {
+            return new ReadOnlyCollection<string>(_accountContainer.Values.Keys.ToList());
+        }
+        */
         public void Clear()
         {
-            foreach (string atKey in _accessTokenContainer.Values.Keys)
-            {
-                _accessTokenContainer.Values.Remove(atKey);
-            }
-            foreach (string rtKey in _refreshTokenContainer.Values.Keys)
-            {
-                _refreshTokenContainer.Values.Remove(rtKey);
-            }
+            _accessTokenContainer.Values.Clear();
+            _refreshTokenContainer.Values.Clear();
+            _idTokenContainer.Values.Clear();
+            _accountContainer.Values.Clear();
+        }
+
+        public void SetSecurityGroup(string securityGroup)
+        {
+            throw new NotImplementedException();
         }
     }
 }

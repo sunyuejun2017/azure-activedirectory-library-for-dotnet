@@ -60,8 +60,6 @@ namespace Microsoft.Identity.Client.Internal.Requests
             UIBehavior UIBehavior, IWebUI webUI)
             : base(authenticationRequestParameters)
         {
-            PlatformPlugin.PlatformInformation.ValidateRedirectUri(authenticationRequestParameters.RedirectUri,
-                authenticationRequestParameters.RequestContext);
             if (!string.IsNullOrWhiteSpace(authenticationRequestParameters.RedirectUri.Fragment))
             {
                 throw new ArgumentException(MsalErrorMessage.RedirectUriContainsFragment, nameof(authenticationRequestParameters.RedirectUri));
@@ -116,6 +114,7 @@ namespace Microsoft.Identity.Client.Internal.Requests
                         AuthenticationRequestParameters.RequestContext)
                         .ConfigureAwait(false);
                 uiEvent.UserCancelled = _authorizationResult.Status == AuthorizationStatus.UserCancel;
+                uiEvent.AccessDenied = _authorizationResult.Status == AuthorizationStatus.ProtocolError;
             }
             finally
             {
@@ -156,7 +155,6 @@ namespace Microsoft.Identity.Client.Internal.Requests
                 _state = Guid.NewGuid().ToString();
                 requestParameters[OAuth2Parameter.State] = _state;
             }
-            
             //add uid/utid values to QP if user object was passed in.
             if (AuthenticationRequestParameters.User != null)
             {
@@ -165,7 +163,7 @@ namespace Microsoft.Identity.Client.Internal.Requests
                     requestParameters[OAuth2Parameter.LoginHint] = AuthenticationRequestParameters.User.DisplayableId;
                 }
 
-                AuthenticationRequestParameters.ClientInfo = ClientInfo.CreateFromEncodedString(AuthenticationRequestParameters.User.Identifier);
+                AuthenticationRequestParameters.ClientInfo = ClientInfo.CreateFromUserIdentifier(AuthenticationRequestParameters.User.Identifier);
 
                 if (!string.IsNullOrEmpty(AuthenticationRequestParameters.ClientInfo.UniqueIdentifier))
                 {
@@ -248,7 +246,7 @@ namespace Microsoft.Identity.Client.Internal.Requests
 
         private void VerifyAuthorizationResult()
         {
-            if (_authorizationResult.Status == AuthorizationStatus.Success && !_state.Equals(_authorizationResult.State))
+            if (_authorizationResult.Status == AuthorizationStatus.Success && !_state.Equals(_authorizationResult.State, StringComparison.OrdinalIgnoreCase))
             {
                 throw new MsalClientException(MsalClientException.StateMismatchError,
                     string.Format(CultureInfo.InvariantCulture, "Returned state({0}) from authorize endpoint is not the same as the one sent({1})", _authorizationResult.State, _state));
@@ -260,10 +258,16 @@ namespace Microsoft.Identity.Client.Internal.Requests
                     MsalErrorMessage.NoPromptFailedErrorMessage);
             }
 
+            if (_authorizationResult.Status == AuthorizationStatus.UserCancel)
+            {
+                throw new MsalClientException(_authorizationResult.Error,
+                _authorizationResult.ErrorDescription);
+            }
+
             if (_authorizationResult.Status != AuthorizationStatus.Success)
             {
                 throw new MsalServiceException(_authorizationResult.Error,
-                    _authorizationResult.ErrorDescription);
+                _authorizationResult.ErrorDescription);
             }
         }
     }

@@ -31,12 +31,12 @@ using System;
 
 namespace Microsoft.Identity.Core.Cache
 {
-    internal class LegacyCachePersistance
+    internal class LegacyCachePersistance : ILegacyCachePersistance
     {
         const string NAME = "ADAL.PCL.iOS";
         private const string LocalSettingsContainerName = "ActiveDirectoryAuthenticationLibrary";
 
-        public static byte[] LoadCache() { 
+        byte[] ILegacyCachePersistance.LoadCache() {
             try
             {
                 SecStatusCode res;
@@ -64,11 +64,10 @@ namespace Microsoft.Identity.Core.Cache
                 CoreLoggerBase.Default.ErrorPii(ex);
                 // Ignore as the cache seems to be corrupt
             }
-
             return null;
         }
 
-        public static void WriteCache(byte[] serializedCache)
+        void ILegacyCachePersistance.WriteCache(byte[] serializedCache)
         {
                 try
                 {

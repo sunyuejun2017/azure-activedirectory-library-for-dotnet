@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------
+﻿//----------------------------------------------------------------------
 //
 // Copyright (c) Microsoft Corporation.
 // All rights reserved.
@@ -25,68 +25,42 @@
 //
 //------------------------------------------------------------------------------
 
-using System.Globalization;
-using System.Runtime.Serialization;
 using Microsoft.Identity.Client.Internal;
 using Microsoft.Identity.Core.OAuth2;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.Identity.Core.Cache
 {
     [DataContract]
-    internal class MsalRefreshTokenCacheItem : MsalTokenCacheItemBase
+    internal class MsalRefreshTokenCacheItem : MsalCredentialCacheItemBase
     {
-
-        public MsalRefreshTokenCacheItem()
+        internal MsalRefreshTokenCacheItem()
+        {
+            CredentialType = Cache.CredentialType.refreshtoken.ToString();
+        }
+        internal MsalRefreshTokenCacheItem(string environment, string clientId, MsalTokenResponse response) : 
+            this(environment, clientId, response.RefreshToken, response.ClientInfo)
         {
         }
 
-        public MsalRefreshTokenCacheItem(string environment, string clientId, MsalTokenResponse response) : base(clientId)
+        internal MsalRefreshTokenCacheItem(string environment, string clientId, string secret, string rawClientInfo) : this()
         {
-            RefreshToken = response.RefreshToken;
+            ClientId = clientId;
             Environment = environment;
-            PopulateIdentifiers(response);
+            Secret = secret;
+            RawClientInfo = rawClientInfo;
+
+            InitUserIdentifier();
         }
 
-        [DataMember(Name = "environment")]
-        public string Environment { get; set; }
-
-        [DataMember(Name = "displayable_id")]
-        public string DisplayableId { get; internal set; }
-
-        [DataMember(Name = "name")]
-        public string Name { get; internal set; }
-
-        [DataMember(Name = "identity_provider")]
-        public string IdentityProvider { get; internal set; }
-
-        [DataMember (Name = "refresh_token")]
-        public string RefreshToken { get; set; }
-
-        public MsalRefreshTokenCacheKey GetRefreshTokenItemKey()
+        internal MsalRefreshTokenCacheKey GetKey()
         {
-            return new MsalRefreshTokenCacheKey(Environment, ClientId, GetUserIdentifier());
-        }
-
-        public void PopulateIdentifiers(MsalTokenResponse response)
-        {
-            IdToken idToken = IdToken.Parse(response.IdToken);
-            RawClientInfo = response.ClientInfo;
-            ClientInfo = ClientInfo.CreateFromJson(RawClientInfo);
-            
-            DisplayableId = idToken.PreferredUsername;
-            Name = idToken.Name;
-            IdentityProvider = idToken.Issuer;
-        }
-
-        // This method is called after the object 
-        // is completely deserialized.
-        [OnDeserialized]
-        void OnDeserialized(StreamingContext context)
-        {
-            if (!string.IsNullOrEmpty(RawClientInfo))
-            {
-                ClientInfo = ClientInfo.CreateFromJson(RawClientInfo);
-            }
+            return new MsalRefreshTokenCacheKey(Environment, ClientId, HomeAccountId);
         }
     }
 }

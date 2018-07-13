@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using Microsoft.Identity.Client.Internal;
 using System.Collections.Generic;
 using Microsoft.Identity.Core;
+using System.Globalization;
 
 namespace Microsoft.Identity.Client
 {
@@ -78,14 +79,14 @@ namespace Microsoft.Identity.Client
         {
             base.ValidateRedirectUri(redirectUri, requestContext);
 
-            if (PlatformInformationBase.DefaultRedirectUri.Equals(redirectUri.AbsoluteUri))
+            if (PlatformInformationBase.DefaultRedirectUri.Equals(redirectUri.AbsoluteUri, StringComparison.OrdinalIgnoreCase))
                 throw new MsalException(MsalError.RedirectUriValidationFailed, "Default redirect URI - " + PlatformInformationBase.DefaultRedirectUri +
                                         " can not be used on Android platform");
         }
 
         public override string GetDefaultRedirectUri(string clientId)
         {
-            return string.Format(AndroidDefaultRedirectUriTemplate, clientId);
+            return String.Format(CultureInfo.InvariantCulture, AndroidDefaultRedirectUriTemplate, clientId);
         }
     }
 }

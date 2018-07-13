@@ -28,7 +28,7 @@
 using Microsoft.Identity.Core.Cache;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Test.Microsoft.Identity.Unit.CacheTests
+namespace Test.Microsoft.Identity.Core.Unit.CacheTests
 {
     [TestClass]
     public class MsalRefreshTokenCacheKeyTests
@@ -43,7 +43,7 @@ namespace Test.Microsoft.Identity.Unit.CacheTests
             Assert.IsNotNull(key);
             Assert.AreEqual(TestConstants.ProductionEnvironment, key.Environment);
             Assert.AreEqual(TestConstants.ClientId, key.ClientId);
-            Assert.AreEqual(TestConstants.UserIdentifier, key.UserIdentifier);
+            Assert.AreEqual(TestConstants.UserIdentifier, key.HomeAccountId);
         }
 
         [TestMethod]
@@ -56,7 +56,7 @@ namespace Test.Microsoft.Identity.Unit.CacheTests
             Assert.IsNotNull(key);
             Assert.AreEqual(TestConstants.ProductionEnvironment, key.Environment);
             Assert.AreEqual(TestConstants.ClientId, key.ClientId);
-            Assert.AreEqual(TestConstants.UserIdentifier, key.UserIdentifier);
+            Assert.AreEqual(TestConstants.UserIdentifier, key.HomeAccountId);
         }
     }
 }
