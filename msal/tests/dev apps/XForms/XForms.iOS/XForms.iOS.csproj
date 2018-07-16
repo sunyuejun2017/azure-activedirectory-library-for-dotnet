@@ -99,6 +99,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Appveyor|iPhone'">
     <OutputPath>bin\iPhone\Appveyor\</OutputPath>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
+    <AppExtensionDebugBundleId />
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AcquirePageRenderer.cs" />
     <Compile Include="GlobalSuppressions.cs" />
