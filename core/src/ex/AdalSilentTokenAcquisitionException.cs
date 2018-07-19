@@ -39,7 +39,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         ///  Initializes a new instance of the exception class.
         /// </summary>
         public AdalSilentTokenAcquisitionException()
-            : base(AdalError.FailedToAcquireTokenSilently, AdalErrorMessage.FailedToAcquireTokenSilently)
+            : base(AdalError.FailedToAcquireTokenSilently, "AdalErrorMessage.FailedToAcquireTokenSilently")
         {
         }
 
@@ -48,7 +48,7 @@ namespace Microsoft.IdentityModel.Clients.ActiveDirectory
         /// </summary>
         /// <param name="innerException"></param>
         public AdalSilentTokenAcquisitionException(Exception innerException)
-            : base(AdalError.FailedToAcquireTokenSilently, AdalErrorMessage.FailedToAcquireTokenSilently, innerException)
+            : base(AdalError.FailedToAcquireTokenSilently, "AdalErrorMessage.FailedToAcquireTokenSilently", innerException)
         {
         }
     }

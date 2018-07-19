@@ -59,6 +59,13 @@
     <None Remove="Cache\MsalIdTokenCacheKey.cs" />
     <None Remove="Cache\MsalRefreshTokenCacheKey.cs" />
     <None Remove="ConfigureAwait.ruleset" />
+    <None Remove="ex\AdalError.cs" />
+    <None Remove="ex\AdalException.cs" />
+    <None Remove="ex\AdalServiceException.cs" />
+    <None Remove="ex\AdalSilentTokenAcquisitionException.cs" />
+    <None Remove="ex\AdalUserMismatchException.cs" />
+    <None Remove="ex\HttpRequestWrapperException.cs" />
+    <None Remove="ex\IHttpWebResponse.cs" />
     <EmbeddedResource Include="Properties\Microsoft.Identity.Core.rd.xml" />
   </ItemGroup>
 
