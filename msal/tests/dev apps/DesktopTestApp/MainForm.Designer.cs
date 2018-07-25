@@ -64,6 +64,7 @@ namespace DesktopTestApp
             this.label6 = new System.Windows.Forms.Label();
             this.loginHintTextBox = new System.Windows.Forms.TextBox();
             this.acquireTokenInteractive = new System.Windows.Forms.Button();
+            this.acquireTokenWIA = new System.Windows.Forms.Button();
             this.acquireTokenSilent = new System.Windows.Forms.Button();
             this.label7 = new System.Windows.Forms.Label();
             this.userList = new System.Windows.Forms.ComboBox();
@@ -417,6 +418,7 @@ namespace DesktopTestApp
             this.publicClientTabPage.BackColor = System.Drawing.SystemColors.Control;
             this.publicClientTabPage.Controls.Add(this.acquireTokenSilentAuthority);
             this.publicClientTabPage.Controls.Add(this.acquireTokenInteractiveAuthority);
+            this.publicClientTabPage.Controls.Add(this.acquireTokenWIA);
             this.publicClientTabPage.Controls.Add(this.PiiLoggingLabel);
             this.publicClientTabPage.Controls.Add(this.authority);
             this.publicClientTabPage.Controls.Add(this.scopes);
@@ -502,6 +504,19 @@ namespace DesktopTestApp
             this.acquireTokenInteractive.Text = "Acquire Token Interactive";
             this.acquireTokenInteractive.UseVisualStyleBackColor = true;
             this.acquireTokenInteractive.Click += new System.EventHandler(this.AcquireTokenInteractive_Click);
+
+            //
+            // acquireTokenByWIA
+            //
+            this.acquireTokenWIA.Location = new System.Drawing.Point(270, 1051);
+            this.acquireTokenWIA.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.acquireTokenWIA.Name = "acquireTokenByWindowsIntegratedAuth";
+            this.acquireTokenWIA.Size = new System.Drawing.Size(400, 46);
+            this.acquireTokenWIA.TabIndex = 9;
+            this.acquireTokenWIA.Text = "Acquire Token By WindowsIntegratedAuth";
+            this.acquireTokenWIA.UseVisualStyleBackColor = true;
+            this.acquireTokenWIA.Click += new System.EventHandler(this.acquireTokenByWindowsIntegratedAuth_Click);
+
             // 
             // acquireTokenSilent
             // 
@@ -774,6 +789,7 @@ namespace DesktopTestApp
         private Label label7;
         private Button acquireTokenSilent;
         private Button acquireTokenInteractive;
+        private Button acquireTokenWIA;
         private Label label6;
         private Label label4;
         private Label label3;
